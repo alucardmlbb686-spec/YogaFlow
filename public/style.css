@@ -1552,6 +1552,29 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     border-right: none;
     border-radius: 0;
     grid-template-columns: 1fr !important;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #page-messages,
+  .chat-panel,
+  .chat-header,
+  .chat-messages,
+  .chat-input-area {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chat-header > div {
+    min-width: 0;
+  }
+
+  .chat-header .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .messages-layout.mobile-list .conversations-panel {
@@ -1582,6 +1605,22 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
   .chat-input-area {
     padding-left: 12px;
     padding-right: 12px;
+  }
+
+  .chat-input-area {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .chat-input-area input {
+    min-width: 0;
+    width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .chat-input-area .send-btn {
+    flex: 0 0 40px;
   }
 
   .mobile-chat-back {
