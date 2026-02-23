@@ -158,6 +158,8 @@ async function initDB() {
       );
 
       ALTER TABLE users ADD COLUMN IF NOT EXISTS friend_id VARCHAR(16);
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'text';
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS image_url TEXT;
       UPDATE users
       SET friend_id = 'YF' || LPAD(id::text, 6, '0')
       WHERE friend_id IS NULL OR friend_id = '';
@@ -498,6 +500,42 @@ app.post('/api/users/:id/follow', auth, async (req, res) => {
   }
 });
 
+app.post('/api/friend-requests/:fromUserId/accept', auth, async (req, res) => {
+  const fromUserId = Number.parseInt(req.params.fromUserId, 10);
+  if (Number.isNaN(fromUserId)) return res.status(400).json({ error: 'Invalid user id' });
+  if (fromUserId === req.user.id) return res.status(400).json({ error: 'Invalid request' });
+
+  const pending = await pool.query(
+    'SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1',
+    [fromUserId, req.user.id]
+  );
+  if (!pending.rows[0]) return res.status(404).json({ error: 'Friend request not found' });
+
+  await pool.query(
+    'INSERT INTO follows (follower_id, following_id) VALUES ($1,$2) ON CONFLICT (follower_id, following_id) DO NOTHING',
+    [req.user.id, fromUserId]
+  );
+  await pool.query(
+    'INSERT INTO notifications (user_id, from_user_id, type) VALUES ($1,$2,$3)',
+    [fromUserId, req.user.id, 'friend_accept']
+  );
+
+  res.json({ accepted: true, is_friend: true });
+});
+
+app.post('/api/friend-requests/:fromUserId/reject', auth, async (req, res) => {
+  const fromUserId = Number.parseInt(req.params.fromUserId, 10);
+  if (Number.isNaN(fromUserId)) return res.status(400).json({ error: 'Invalid user id' });
+  if (fromUserId === req.user.id) return res.status(400).json({ error: 'Invalid request' });
+
+  await pool.query(
+    'DELETE FROM follows WHERE follower_id = $1 AND following_id = $2',
+    [fromUserId, req.user.id]
+  );
+
+  res.json({ rejected: true });
+});
+
 // ─── MESSAGES ─────────────────────────────────────────────────
 app.get('/api/messages/conversations', auth, async (req, res) => {
   const result = await pool.query(
@@ -594,11 +632,14 @@ app.get('/api/messages/:userId', auth, async (req, res) => {
   res.json(result.rows);
 });
 
-app.post('/api/messages', auth, async (req, res) => {
+app.post('/api/messages', auth, upload.single('image'), async (req, res) => {
   const { receiver_id, content } = req.body;
   const targetUserId = Number.parseInt(receiver_id, 10);
   if (Number.isNaN(targetUserId)) return res.status(400).json({ error: 'Invalid user id' });
-  if (!content || !String(content).trim()) return res.status(400).json({ error: 'Message is required' });
+
+  const textContent = String(content || '').trim();
+  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+  if (!textContent && !imageUrl) return res.status(400).json({ error: 'Message text or image is required' });
 
   const friendship = await pool.query(
     `SELECT (
@@ -609,9 +650,10 @@ app.post('/api/messages', auth, async (req, res) => {
   );
   if (!friendship.rows[0]?.is_friend) return res.status(403).json({ error: 'Only friends can chat' });
 
+  const messageType = imageUrl ? 'image' : 'text';
   const result = await pool.query(
-    'INSERT INTO messages (sender_id, receiver_id, content) VALUES ($1,$2,$3) RETURNING *',
-    [req.user.id, targetUserId, String(content).trim()]
+    'INSERT INTO messages (sender_id, receiver_id, content, message_type, image_url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+    [req.user.id, targetUserId, textContent || '', messageType, imageUrl]
   );
   const msg = result.rows[0];
   // broadcast via WebSocket
@@ -625,7 +667,19 @@ app.post('/api/messages', auth, async (req, res) => {
 // ─── NOTIFICATIONS ────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
   const result = await pool.query(
-    `SELECT n.*, u.username, u.full_name, u.avatar_url FROM notifications n
+    `SELECT n.*, u.username, u.full_name, u.avatar_url,
+      CASE
+        WHEN n.type = 'follow'
+          AND EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = n.from_user_id AND f.following_id = n.user_id)
+          AND NOT EXISTS(SELECT 1 FROM follows f2 WHERE f2.follower_id = n.user_id AND f2.following_id = n.from_user_id)
+          THEN 'pending'
+        WHEN n.type = 'follow'
+          AND EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = n.from_user_id AND f.following_id = n.user_id)
+          AND EXISTS(SELECT 1 FROM follows f2 WHERE f2.follower_id = n.user_id AND f2.following_id = n.from_user_id)
+          THEN 'accepted'
+        ELSE NULL
+      END as friend_request_status
+     FROM notifications n
      JOIN users u ON u.id = n.from_user_id
      WHERE n.user_id = $1 ORDER BY n.created_at DESC LIMIT 30`,
     [req.user.id]

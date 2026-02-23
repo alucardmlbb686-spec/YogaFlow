@@ -1746,3 +1746,69 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     font-size: 18px;
   }
 }
+
+/* ─── DYNAMIC REQUEST + MEDIA MESSAGE UI ───────────────────── */
+.notif-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notif-actions .btn-primary,
+.notif-actions .btn-secondary {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.chat-media-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.chat-media-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.bubble-image {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-image {
+  width: 220px;
+  max-width: min(62vw, 280px);
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+}
+
+.chat-text {
+  word-break: break-word;
+  white-space: pre-wrap;
+  padding: 0 6px 2px;
+}
+
+@media (max-width: 768px) {
+  .notif-actions {
+    flex-wrap: wrap;
+  }
+
+  .notif-actions .btn-primary,
+  .notif-actions .btn-secondary {
+    flex: 1;
+    min-width: 90px;
+  }
+
+  .chat-image {
+    max-width: min(72vw, 260px);
+  }
+}

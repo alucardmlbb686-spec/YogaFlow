@@ -719,6 +719,10 @@ async function openChat(userId, username, avatar) {
     </div>
     <div class="chat-messages" id="chat-messages"><div class="loading-indicator"><div class="spinner"></div></div></div>
     <div class="chat-input-area">
+      <input type="file" id="chat-image-input" accept="image/*" style="display:none" onchange="sendMessageImage(${userId}, this)" />
+      <button class="btn-icon chat-media-btn" onclick="document.getElementById('chat-image-input').click()" aria-label="Send image">
+        <i class="fas fa-image"></i>
+      </button>
       <input type="text" placeholder="Message…" id="chat-input" onkeydown="if(event.key==='Enter')sendMessage(${userId})" />
       <button class="send-btn" onclick="sendMessage(${userId})"><i class="fas fa-paper-plane"></i></button>
     </div>`;
@@ -743,9 +747,14 @@ async function loadMessages(userId) {
 
 function renderBubble(msg) {
   const sent = msg.sender_id === currentUser?.id;
+  const hasImage = !!msg.image_url;
+  const imageBlock = hasImage
+    ? `<img src="${msg.image_url}" class="chat-image" onclick="window.open('${msg.image_url}', '_blank')" />`
+    : '';
+  const textBlock = msg.content ? `<div class="chat-text">${escapeHtml(msg.content)}</div>` : '';
   return `<div class="message-wrap ${sent ? 'sent' : 'received'}">
     ${!sent ? `<img src="${msg.avatar_url || avatarFallback(msg.username)}" class="avatar-sm" style="width:28px;height:28px" />` : ''}
-    <div class="bubble ${sent ? 'sent' : 'received'}">${escapeHtml(msg.content)}</div>
+    <div class="bubble ${sent ? 'sent' : 'received'} ${hasImage ? 'bubble-image' : ''}">${imageBlock}${textBlock}</div>
     <span class="msg-time">${getShortTime(msg.created_at)}</span>
   </div>`;
 }
@@ -774,6 +783,31 @@ async function sendMessage(receiverId) {
   } else if (res) {
     const data = await res.json().catch(() => ({}));
     toast(data.error || 'Message failed');
+  }
+}
+
+async function sendMessageImage(receiverId, input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('receiver_id', receiverId);
+  formData.append('image', file);
+
+  const res = await api('/messages', {
+    method: 'POST',
+    body: formData
+  });
+
+  input.value = '';
+
+  if (res?.ok) {
+    const msg = await res.json();
+    appendMessage(msg);
+    loadConversations();
+  } else if (res) {
+    const data = await res.json().catch(() => ({}));
+    toast(data.error || 'Image send failed');
   }
 }
 
@@ -820,15 +854,61 @@ async function loadNotifications() {
     return;
   }
   container.innerHTML = notifs.map(n => {
-    const icon = n.type === 'like' ? { cls: 'like', ico: '❤️' } : n.type === 'follow' ? { cls: 'follow', ico: '🌿' } : { cls: 'comment', ico: '💬' };
-    const text = n.type === 'like' ? 'liked your post' : n.type === 'follow' ? 'started following you' : 'commented on your post';
+    const icon = n.type === 'like'
+      ? { cls: 'like', ico: '❤️' }
+      : (n.type === 'follow' || n.type === 'friend_accept')
+        ? { cls: 'follow', ico: '🤝' }
+        : { cls: 'comment', ico: '💬' };
+
+    const text = n.type === 'like'
+      ? 'liked your post'
+      : n.type === 'follow'
+        ? (n.friend_request_status === 'pending' ? 'sent you a friend request' : 'is now your friend')
+        : n.type === 'friend_accept'
+          ? 'accepted your friend request'
+          : 'commented on your post';
+
+    const requestActions = (n.type === 'follow' && n.friend_request_status === 'pending')
+      ? `<div class="notif-actions" onclick="event.stopPropagation()">
+          <button class="btn-primary" onclick="acceptFriendRequest(${n.from_user_id})">Accept</button>
+          <button class="btn-secondary" onclick="rejectFriendRequest(${n.from_user_id})">Reject</button>
+        </div>`
+      : '';
+
     const avatar = n.avatar_url || avatarFallback(n.username);
     return `<div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="viewProfile('${n.username}')">
       <img src="${avatar}" class="avatar-sm" onerror="this.src='${avatarFallback(n.username)}'" />
-      <div class="notif-text"><strong>${n.username}</strong> ${text}</div>
+      <div class="notif-text">
+        <strong>${n.username}</strong> ${text}
+        ${requestActions}
+      </div>
       <div class="notif-time">${getTimeAgo(n.created_at)}</div>
     </div>`;
   }).join('');
+}
+
+async function acceptFriendRequest(fromUserId) {
+  const res = await api(`/friend-requests/${fromUserId}/accept`, { method: 'POST' });
+  if (!res?.ok) {
+    const data = await res?.json().catch(() => ({}));
+    toast(data?.error || 'Could not accept request');
+    return;
+  }
+  toast('Friend request accepted');
+  loadNotifications();
+  loadConversations();
+}
+
+async function rejectFriendRequest(fromUserId) {
+  const res = await api(`/friend-requests/${fromUserId}/reject`, { method: 'POST' });
+  if (!res?.ok) {
+    const data = await res?.json().catch(() => ({}));
+    toast(data?.error || 'Could not reject request');
+    return;
+  }
+  toast('Friend request rejected');
+  loadNotifications();
+  loadConversations();
 }
 
 async function pollNotifications() {
