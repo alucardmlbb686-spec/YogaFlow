@@ -12,6 +12,34 @@ let feedPage = 1;
 let loadingFeed = false;
 let currentChatUserId = null;
 
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function setMessagesMobileView(view) {
+  const layout = document.querySelector('.messages-layout');
+  const conversationsPanel = document.querySelector('.conversations-panel');
+  if (!layout || !conversationsPanel) return;
+
+  layout.classList.remove('mobile-list', 'mobile-chat');
+  conversationsPanel.classList.remove('show');
+
+  if (!isMobileViewport()) return;
+
+  if (view === 'chat') {
+    layout.classList.add('mobile-chat');
+    return;
+  }
+
+  layout.classList.add('mobile-list');
+  conversationsPanel.classList.add('show');
+}
+
+function showMessagesList() {
+  currentChatUserId = null;
+  setMessagesMobileView('list');
+}
+
 function getFriendButtonLabel(user) {
   if (user?.is_friend) return 'Friends';
   if (user?.is_following) return user?.follows_you ? 'Accept Friend' : 'Friend Request Sent';
@@ -190,7 +218,11 @@ function navigate(page) {
     case 'feed': loadFeed(true); break;
     case 'explore': loadExplore(); break;
     case 'friends': loadFriendsPage(); break;
-    case 'messages': loadConversations(); break;
+    case 'messages':
+      currentChatUserId = null;
+      setMessagesMobileView('list');
+      loadConversations();
+      break;
     case 'notifications': loadNotifications(); break;
     case 'profile': loadProfile(currentUser?.username); break;
   }
@@ -637,6 +669,9 @@ async function saveProfile() {
 
 // ─── MESSAGES ─────────────────────────────────────────────────
 async function loadConversations() {
+  if (currentPage === 'messages' && !currentChatUserId) {
+    setMessagesMobileView('list');
+  }
   const res = await api('/messages/conversations');
   if (!res) return;
   const convos = await res.json();
@@ -667,11 +702,15 @@ async function loadConversations() {
 
 async function openChat(userId, username, avatar) {
   currentChatUserId = userId;
+  setMessagesMobileView('chat');
   document.querySelectorAll('.convo-item').forEach(el => el.classList.remove('active'));
   event?.currentTarget?.classList?.add('active');
   const panel = document.getElementById('chat-panel');
   panel.innerHTML = `
     <div class="chat-header">
+      <button class="btn-icon mobile-chat-back" onclick="showMessagesList()" aria-label="Back to conversations">
+        <i class="fas fa-arrow-left"></i>
+      </button>
       <img src="${avatar}" class="avatar-sm" onclick="viewProfile('${username}')" style="cursor:pointer" onerror="this.src='${avatarFallback(username)}'" />
       <div>
         <div class="name" onclick="viewProfile('${username}')" style="cursor:pointer">${username}</div>
@@ -742,6 +781,11 @@ function startDM(userId, username, avatar) {
   navigate('messages');
   setTimeout(() => openChat(userId, username, avatar), 100);
 }
+
+window.addEventListener('resize', () => {
+  if (currentPage !== 'messages') return;
+  setMessagesMobileView(currentChatUserId ? 'chat' : 'list');
+});
 
 function openNewConversation() { document.getElementById('new-convo-modal').classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
