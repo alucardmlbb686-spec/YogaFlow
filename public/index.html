@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YogaFlow — Find Your Flow</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="brand-lotus">🪷</div>
+      <h1 class="brand-name">YogaFlow</h1>
+      <p class="brand-tagline">Your mindful community awaits</p>
+    </div>
+    <div class="auth-illustration">
+      <div class="floating-card fc1"><span>🧘‍♀️</span><span>Ashtanga</span></div>
+      <div class="floating-card fc2"><span>🌅</span><span>Morning Flow</span></div>
+      <div class="floating-card fc3"><span>💫</span><span>Yin Yoga</span></div>
+      <div class="floating-card fc4"><span>🌿</span><span>Breathwork</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div id="login-form" class="auth-form active">
+      <h2>Welcome back</h2>
+      <p class="auth-subtitle">Sign in to your flow</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="your@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" onclick="login()">Sign In</button>
+      <p class="auth-switch">New to YogaFlow? <span onclick="showRegister()">Create account</span></p>
+    </div>
+
+    <div id="register-form" class="auth-form">
+      <h2>Join YogaFlow</h2>
+      <p class="auth-subtitle">Start your mindful journey</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="your_name" />
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-fullname" placeholder="Full Name" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="your@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="••••••••" />
+      </div>
+      <div class="form-group">
+        <label>Yoga Style</label>
+        <select id="reg-style">
+          <option value="">Select your style...</option>
+          <option>Hatha</option>
+          <option>Vinyasa</option>
+          <option>Ashtanga</option>
+          <option>Yin Yoga</option>
+          <option>Restorative</option>
+          <option>Power Yoga</option>
+          <option>Kundalini</option>
+          <option>Iyengar</option>
+          <option>Bikram</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="register()">Create Account</button>
+      <p class="auth-switch">Already have an account? <span onclick="showLogin()">Sign in</span></p>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <div class="mobile-topbar">
+    <div class="mobile-topbar-brand">🪷 YogaFlow</div>
+    <button id="mobile-menu-btn" class="btn-icon" onclick="toggleMobileMenu()" aria-label="Open menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div id="mobile-menu" class="mobile-menu hidden">
+      <button onclick="navigateFromMobileMenu('friends')"><i class="fas fa-user-plus"></i> Add Friends</button>
+    </div>
+  </div>
+
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span>🪷</span>
+      <span class="sidebar-brand-text">YogaFlow</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item active" data-page="feed" onclick="navigate('feed')"><i class="fas fa-home"></i><span>Home</span></li>
+      <li class="nav-item" data-page="explore" onclick="navigate('explore')"><i class="fas fa-compass"></i><span>Explore</span></li>
+      <li class="nav-item" data-page="friends" onclick="navigate('friends')"><i class="fas fa-user-plus"></i><span>Add Friends</span></li>
+      <li class="nav-item" data-page="messages" onclick="navigate('messages')"><i class="fas fa-paper-plane"></i><span>Messages</span><span class="badge" id="msg-badge" style="display:none">0</span></li>
+      <li class="nav-item" data-page="notifications" onclick="navigate('notifications')"><i class="fas fa-heart"></i><span>Activity</span><span class="badge" id="notif-badge" style="display:none">0</span></li>
+      <li class="nav-item" onclick="openCreatePost()"><i class="fas fa-plus-square"></i><span>Create</span></li>
+      <li class="nav-item" data-page="profile" onclick="navigate('profile')"><i class="fas fa-user"></i><span>Profile</span></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="navigate('profile')">
+        <img id="sidebar-avatar" src="" class="avatar-sm" alt="" />
+        <div>
+          <p id="sidebar-username" class="fw-500"></p>
+          <p id="sidebar-style" class="text-muted small"></p>
+          <p id="sidebar-friend-id" class="text-muted small"></p>
+        </div>
+      </div>
+      <button class="btn-icon" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </nav>
+
+  <nav class="mobile-nav">
+    <button onclick="navigate('feed')"><i class="fas fa-home"></i></button>
+    <button onclick="navigate('explore')"><i class="fas fa-compass"></i></button>
+    <button onclick="openCreatePost()" class="create-btn"><i class="fas fa-plus"></i></button>
+    <button onclick="navigate('messages')"><i class="fas fa-paper-plane"></i></button>
+    <button onclick="navigate('profile')"><i class="fas fa-user"></i></button>
+  </nav>
+
+  <main class="main-content">
+    <div id="page-feed" class="page active">
+      <div class="page-header">
+        <h2>Your Flow</h2>
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search by username or ID..." id="search-input" oninput="searchUsers(this.value)" />
+          <div id="search-results" class="search-dropdown"></div>
+        </div>
+      </div>
+      <div id="stories-row" class="stories-row"></div>
+      <div id="feed-posts" class="posts-container"></div>
+      <div id="feed-loading" class="loading-indicator"><div class="spinner"></div></div>
+    </div>
+
+    <div id="page-explore" class="page">
+      <div class="page-header"><h2>Explore</h2></div>
+      <div id="explore-posts" class="explore-grid"></div>
+    </div>
+
+    <div id="page-friends" class="page">
+      <div class="page-header"><h2>Add Friends</h2></div>
+      <div class="friends-search-wrap">
+        <input id="friend-search-input" type="text" placeholder="Find by username, Friend ID (e.g. YF000123), or numeric ID" oninput="searchFriends(this.value)" />
+      </div>
+      <div id="friends-search-results" class="friends-results"></div>
+    </div>
+
+    <div id="page-messages" class="page">
+      <div class="messages-layout">
+        <div class="conversations-panel">
+          <div class="panel-header">
+            <h3>Messages</h3>
+            <button class="btn-icon" onclick="openNewConversation()"><i class="fas fa-edit"></i></button>
+          </div>
+          <div id="conversations-list"></div>
+        </div>
+        <div class="chat-panel" id="chat-panel">
+          <div class="chat-empty-state"><div class="empty-icon">💬</div><h3>Your Messages</h3><p>Select a conversation or start a new one</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-notifications" class="page">
+      <div class="page-header"><h2>Activity</h2></div>
+      <div id="notifications-list" class="notifications-list"></div>
+    </div>
+
+    <div id="page-profile" class="page">
+      <div id="profile-content"></div>
+    </div>
+  </main>
+
+  <aside class="right-panel">
+    <div id="suggestions-panel">
+      <h4 class="suggestions-title">Suggested for you</h4>
+      <div id="suggestions-list"></div>
+    </div>
+  </aside>
+</div>
+
+<div id="create-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header"><h3>New Post</h3><button class="btn-icon" onclick="closeCreatePost()"><i class="fas fa-times"></i></button></div>
+    <div class="create-post-area">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('post-image').click()">
+        <div class="upload-placeholder" id="upload-placeholder"><i class="fas fa-image"></i><p>Click to select a photo</p><span>JPG, PNG, GIF or WebP • Max 10MB</span></div>
+        <img id="post-preview" class="post-preview-img hidden" />
+        <input type="file" id="post-image" accept="image/*" onchange="previewImage(this)" style="display:none" />
+      </div>
+      <div class="post-details">
+        <div class="post-author-preview"><img id="create-avatar" class="avatar-sm" /><span id="create-username"></span></div>
+        <textarea id="post-caption" placeholder="Share your yoga journey... ✨" rows="4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeCreatePost()">Cancel</button><button class="btn-primary" onclick="submitPost()">Share</button></div>
+  </div>
+</div>
+
+<div id="post-modal" class="modal-overlay hidden">
+  <div class="modal modal-post">
+    <button class="modal-close-btn" onclick="closePostModal()"><i class="fas fa-times"></i></button>
+    <div class="post-modal-content" id="post-modal-content"></div>
+  </div>
+</div>
+
+<div id="new-convo-modal" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>New Message</h3><button class="btn-icon" onclick="closeModal('new-convo-modal')"><i class="fas fa-times"></i></button></div>
+    <div class="form-group">
+      <input type="text" placeholder="Search users..." id="convo-search" oninput="searchConvoUsers(this.value)" />
+      <div id="convo-search-results" class="search-dropdown visible"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
