@@ -21,6 +21,7 @@
   --red: #c2523a;
   --gold: #c8a96e;
   --gold-light: #f9f3e8;
+  --verified-blue: #1d9bf0;
   --sidebar-w: 240px;
   --right-w: 280px;
   --radius: 16px;
@@ -51,7 +52,7 @@ body:not(.authenticated) #app { display: none !important; }
   height: 16px;
   margin-left: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--verified-blue);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -61,12 +62,12 @@ body:not(.authenticated) #app { display: none !important; }
 
 @keyframes verifiedGlow {
   0%, 100% {
-    box-shadow: 0 0 0 rgba(124, 111, 94, 0);
+    box-shadow: 0 0 0 rgba(29, 155, 240, 0);
     transform: scale(1);
     opacity: 0.92;
   }
   50% {
-    box-shadow: 0 0 12px rgba(124, 111, 94, 0.8), 0 0 22px rgba(124, 111, 94, 0.35);
+    box-shadow: 0 0 12px rgba(29, 155, 240, 0.9), 0 0 22px rgba(29, 155, 240, 0.45);
     transform: scale(1.08);
     opacity: 1;
   }

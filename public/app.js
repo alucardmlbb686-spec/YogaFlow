@@ -272,12 +272,13 @@ function renderPost(post) {
   const avatar = post.avatar_url || avatarFallback(post.username);
   const timeAgo = getTimeAgo(post.created_at);
   const liked = post.is_liked;
+  const postUserRef = { id: post.user_id, friend_id: post.friend_id };
   return `
   <article class="post-card" id="post-${post.id}">
     <div class="post-header">
       <img src="${avatar}" class="avatar-sm" onerror="this.src='${avatarFallback(post.username)}'" />
       <div class="info">
-        <a onclick="viewProfile('${post.username}')">${post.username}</a>
+        <a onclick="viewProfile('${post.username}')">${post.username}${renderVerifiedBadge(postUserRef)}</a>
         <small>${post.yoga_style || 'Yoga'} · ${timeAgo}</small>
       </div>
       ${post.user_id === currentUser?.id ? `
@@ -301,7 +302,7 @@ function renderPost(post) {
     </div>
     <div class="post-meta">
       <p class="post-likes">${post.likes_count} likes</p>
-      ${post.caption ? `<p class="post-caption"><span class="username" onclick="viewProfile('${post.username}')">${post.username}</span>${escapeHtml(post.caption)}</p>` : ''}
+      ${post.caption ? `<p class="post-caption"><span class="username" onclick="viewProfile('${post.username}')">${post.username}${renderVerifiedBadge(postUserRef)}</span>${escapeHtml(post.caption)}</p>` : ''}
       <span class="view-comments" onclick="openPostModal(${post.id})">View all ${post.comments_count} comments</span>
       <p class="post-time">${timeAgo}</p>
     </div>
@@ -416,6 +417,7 @@ async function openPostModal(postId) {
   }
 
   const avatar = post.avatar_url || avatarFallback(post.username);
+  const postUserRef = { id: post.user_id, friend_id: post.friend_id };
   document.getElementById('post-modal-content').innerHTML = `
     <div class="post-modal-image">
       <img src="${post.image_url}" />
@@ -424,12 +426,12 @@ async function openPostModal(postId) {
       <div class="post-modal-header">
         <img src="${avatar}" class="avatar-sm" onerror="this.src='${avatarFallback(post.username)}'" />
         <div class="info">
-          <a style="font-weight:700;cursor:pointer" onclick="closePostModal();viewProfile('${post.username}')">${post.username}</a>
+          <a style="font-weight:700;cursor:pointer" onclick="closePostModal();viewProfile('${post.username}')">${post.username}${renderVerifiedBadge(postUserRef)}</a>
           <p style="font-size:12px;color:var(--text-3)">${getTimeAgo(post.created_at)}</p>
         </div>
       </div>
       <div class="post-modal-comments" id="modal-comments">
-        ${post.caption ? `<div class="comment-item"><img src="${avatar}" class="avatar-sm" /><div class="text"><strong onclick="closePostModal();viewProfile('${post.username}')">${post.username}</strong> ${escapeHtml(post.caption)}</div></div>` : ''}
+        ${post.caption ? `<div class="comment-item"><img src="${avatar}" class="avatar-sm" /><div class="text"><strong onclick="closePostModal();viewProfile('${post.username}')">${post.username}${renderVerifiedBadge(postUserRef)}</strong> ${escapeHtml(post.caption)}</div></div>` : ''}
         ${comments.map(c => renderComment(c)).join('')}
       </div>
       <div class="post-modal-actions">
@@ -453,10 +455,11 @@ async function openPostModal(postId) {
 
 function renderComment(c) {
   const avatar = c.avatar_url || avatarFallback(c.username);
+  const commenterRef = { id: c.user_id, friend_id: c.friend_id };
   return `<div class="comment-item">
     <img src="${avatar}" class="avatar-sm" onerror="this.src='${avatarFallback(c.username)}'" />
     <div class="text">
-      <strong onclick="closePostModal();viewProfile('${c.username}')">${c.username}</strong> ${escapeHtml(c.content)}
+      <strong onclick="closePostModal();viewProfile('${c.username}')">${c.username}${renderVerifiedBadge(commenterRef)}</strong> ${escapeHtml(c.content)}
       <div class="time">${getTimeAgo(c.created_at)}</div>
     </div>
   </div>`;
