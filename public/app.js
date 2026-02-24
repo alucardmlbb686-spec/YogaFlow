@@ -256,9 +256,19 @@ async function loadFeed(reset = false) {
   document.getElementById('feed-loading').style.display = 'none';
   loadingFeed = false;
   if (!res) return;
-  const posts = await res.json();
+  let posts = await res.json();
   if (!Array.isArray(posts)) return;
   const container = document.getElementById('feed-posts');
+
+  if (posts.length === 0 && feedPage === 1) {
+    const exploreRes = await api('/posts/explore?page=1');
+    const explorePosts = exploreRes?.ok ? await exploreRes.json() : [];
+    if (Array.isArray(explorePosts) && explorePosts.length > 0) {
+      posts = explorePosts;
+      container.innerHTML = '<div class="empty-state" style="padding:20px"><h3>Discover posts</h3><p>Your personal feed is empty right now, showing community posts.</p></div>';
+    }
+  }
+
   if (posts.length === 0 && feedPage === 1) {
     container.innerHTML = `<div class="empty-state"><div class="icon">🧘‍♀️</div><h3>Your feed is empty</h3><p>Follow some yogis to see their posts!</p></div>`;
     return;
