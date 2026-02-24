@@ -329,7 +329,7 @@ async function loadStories() {
       <div class="story-ring">
         <img src="${u.avatar_url || avatarFallback(u.username)}" onerror="this.src='${avatarFallback(u.username)}'" />
       </div>
-      <span class="story-label">${u.username}</span>
+      <span class="story-label">${u.username}${renderVerifiedBadge(u)}</span>
     </div>
   `).join('');
 }
@@ -718,7 +718,7 @@ async function loadConversations() {
     return;
   }
   list.innerHTML = convos.map(c => `
-    <div class="convo-item ${c.partner_id === currentChatUserId ? 'active' : ''}" onclick="openChat(${c.partner_id}, '${c.username}', '${c.avatar_url || avatarFallback(c.username)}')">
+    <div class="convo-item ${c.partner_id === currentChatUserId ? 'active' : ''}" onclick="openChat(${c.partner_id}, '${c.username}', '${c.avatar_url || avatarFallback(c.username)}', '${c.friend_id || ''}')">
       <img src="${c.avatar_url || avatarFallback(c.username)}" class="avatar-sm" onerror="this.src='${avatarFallback(c.username)}'" />
       <div class="info">
         <div class="name">${c.full_name || c.username}${renderVerifiedBadge({ id: c.partner_id, friend_id: c.friend_id })}</div>
@@ -737,7 +737,7 @@ async function loadConversations() {
   badge.style.display = totalUnread > 0 ? '' : 'none';
 }
 
-async function openChat(userId, username, avatar) {
+async function openChat(userId, username, avatar, friendId = '') {
   currentChatUserId = userId;
   setMessagesMobileView('chat');
   document.querySelectorAll('.convo-item').forEach(el => el.classList.remove('active'));
@@ -750,7 +750,7 @@ async function openChat(userId, username, avatar) {
       </button>
       <img src="${avatar}" class="avatar-sm" onclick="viewProfile('${username}')" style="cursor:pointer" onerror="this.src='${avatarFallback(username)}'" />
       <div>
-        <div class="name" onclick="viewProfile('${username}')" style="cursor:pointer">${username}${renderVerifiedBadge({ id: userId })}</div>
+        <div class="name" onclick="viewProfile('${username}')" style="cursor:pointer">${username}${renderVerifiedBadge({ id: userId, friend_id: friendId || undefined })}</div>
         <div class="status">Active</div>
       </div>
     </div>
@@ -848,9 +848,9 @@ async function sendMessageImage(receiverId, input) {
   }
 }
 
-function startDM(userId, username, avatar) {
+function startDM(userId, username, avatar, friendId = '') {
   navigate('messages');
-  setTimeout(() => openChat(userId, username, avatar), 100);
+  setTimeout(() => openChat(userId, username, avatar, friendId), 100);
 }
 
 window.addEventListener('resize', () => {
@@ -871,9 +871,9 @@ async function searchConvoUsers(query) {
     return;
   }
   document.getElementById('convo-search-results').innerHTML = users.map(u => `
-    <div class="search-dropdown-item" onclick="closeModal('new-convo-modal');startDM(${u.id},'${u.username}','${u.avatar_url || avatarFallback(u.username)}')">
+    <div class="search-dropdown-item" onclick="closeModal('new-convo-modal');startDM(${u.id},'${u.username}','${u.avatar_url || avatarFallback(u.username)}','${u.friend_id || ''}')">
       <img src="${u.avatar_url || avatarFallback(u.username)}" class="avatar-sm" onerror="this.src='${avatarFallback(u.username)}'" />
-      <div class="info"><p>${u.username}</p><small>${u.full_name || ''}</small></div>
+      <div class="info"><p>${u.username}${renderVerifiedBadge(u)}</p><small>${u.full_name || ''}</small></div>
     </div>
   `).join('');
 }
@@ -916,7 +916,7 @@ async function loadNotifications() {
     return `<div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="viewProfile('${n.username}')">
       <img src="${avatar}" class="avatar-sm" onerror="this.src='${avatarFallback(n.username)}'" />
       <div class="notif-text">
-        <strong>${n.username}</strong> ${text}
+        <strong>${n.username}${renderVerifiedBadge(n)}</strong> ${text}
         ${requestActions}
       </div>
       <div class="notif-time">${getTimeAgo(n.created_at)}</div>

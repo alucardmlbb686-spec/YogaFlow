@@ -358,7 +358,7 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
     [req.user.id, caption, image_url]
   );
   const post = result.rows[0];
-  const user = await pool.query('SELECT username, full_name, avatar_url FROM users WHERE id = $1', [req.user.id]);
+  const user = await pool.query('SELECT username, full_name, avatar_url, friend_id FROM users WHERE id = $1', [req.user.id]);
   res.json({ ...post, ...user.rows[0] });
 });
 
@@ -367,7 +367,7 @@ app.get('/api/posts/feed', auth, async (req, res) => {
   const limit = 10;
   const offset = (page - 1) * limit;
   const result = await pool.query(
-    `SELECT p.*, u.username, u.full_name, u.avatar_url,
+    `SELECT p.*, u.username, u.full_name, u.avatar_url, u.friend_id,
       EXISTS(SELECT 1 FROM likes WHERE user_id = $1 AND post_id = p.id) as is_liked
      FROM posts p
      JOIN users u ON u.id = p.user_id
@@ -384,7 +384,7 @@ app.get('/api/posts/explore', auth, async (req, res) => {
   const limit = 12;
   const offset = (page - 1) * limit;
   const result = await pool.query(
-    `SELECT p.*, u.username, u.full_name, u.avatar_url,
+    `SELECT p.*, u.username, u.full_name, u.avatar_url, u.friend_id,
       EXISTS(SELECT 1 FROM likes WHERE user_id = $1 AND post_id = p.id) as is_liked
      FROM posts p
      JOIN users u ON u.id = p.user_id
@@ -397,7 +397,7 @@ app.get('/api/posts/explore', auth, async (req, res) => {
 
 app.get('/api/posts/user/:username', auth, async (req, res) => {
   const result = await pool.query(
-    `SELECT p.*, u.username, u.full_name, u.avatar_url,
+    `SELECT p.*, u.username, u.full_name, u.avatar_url, u.friend_id,
       EXISTS(SELECT 1 FROM likes WHERE user_id = $1 AND post_id = p.id) as is_liked
      FROM posts p
      JOIN users u ON u.id = p.user_id
@@ -435,7 +435,7 @@ app.post('/api/posts/:id/like', auth, async (req, res) => {
 // ─── COMMENTS ─────────────────────────────────────────────────
 app.get('/api/posts/:id/comments', auth, async (req, res) => {
   const result = await pool.query(
-    `SELECT c.*, u.username, u.full_name, u.avatar_url FROM comments c
+    `SELECT c.*, u.username, u.full_name, u.avatar_url, u.friend_id FROM comments c
      JOIN users u ON u.id = c.user_id WHERE c.post_id = $1 ORDER BY c.created_at ASC`,
     [req.params.id]
   );
@@ -450,7 +450,7 @@ app.post('/api/posts/:id/comments', auth, async (req, res) => {
     [req.user.id, req.params.id, content]
   );
   await pool.query('UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1', [req.params.id]);
-  const user = await pool.query('SELECT username, full_name, avatar_url FROM users WHERE id = $1', [req.user.id]);
+  const user = await pool.query('SELECT username, full_name, avatar_url, friend_id FROM users WHERE id = $1', [req.user.id]);
   res.json({ ...result.rows[0], ...user.rows[0] });
 });
 
@@ -564,6 +564,7 @@ app.get('/api/messages/conversations', auth, async (req, res) => {
       u.username,
       u.full_name,
       u.avatar_url,
+      u.friend_id,
       lm.content as last_message,
       lm.created_at as last_at,
       (SELECT COUNT(*) FROM messages WHERE receiver_id = $1 AND sender_id = fr.partner_id AND is_read = FALSE) as unread_count
@@ -623,7 +624,7 @@ app.get('/api/messages/:userId', auth, async (req, res) => {
 
   await pool.query('UPDATE messages SET is_read = TRUE WHERE sender_id = $1 AND receiver_id = $2', [otherUserId, req.user.id]);
   const result = await pool.query(
-    `SELECT m.*, u.username, u.avatar_url FROM messages m
+    `SELECT m.*, u.username, u.avatar_url, u.friend_id FROM messages m
      JOIN users u ON u.id = m.sender_id
      WHERE (m.sender_id = $1 AND m.receiver_id = $2) OR (m.sender_id = $2 AND m.receiver_id = $1)
      ORDER BY m.created_at ASC LIMIT 100`,
@@ -657,7 +658,7 @@ app.post('/api/messages', auth, upload.single('image'), async (req, res) => {
   );
   const msg = result.rows[0];
   // broadcast via WebSocket
-  const senderInfo = await pool.query('SELECT username, avatar_url FROM users WHERE id = $1', [req.user.id]);
+  const senderInfo = await pool.query('SELECT username, avatar_url, friend_id FROM users WHERE id = $1', [req.user.id]);
   const payload = { ...msg, ...senderInfo.rows[0] };
   broadcastToUser(targetUserId, { type: 'new_message', data: payload });
   broadcastToUser(req.user.id, { type: 'new_message', data: payload });
@@ -667,7 +668,7 @@ app.post('/api/messages', auth, upload.single('image'), async (req, res) => {
 // ─── NOTIFICATIONS ────────────────────────────────────────────
 app.get('/api/notifications', auth, async (req, res) => {
   const result = await pool.query(
-    `SELECT n.*, u.username, u.full_name, u.avatar_url,
+    `SELECT n.*, u.username, u.full_name, u.avatar_url, u.friend_id,
       CASE
         WHEN n.type = 'follow'
           AND EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = n.from_user_id AND f.following_id = n.user_id)
