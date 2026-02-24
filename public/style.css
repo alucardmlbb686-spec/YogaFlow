@@ -1832,3 +1832,50 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
     min-width: 0;
   }
 }
+
+@media (max-width: 768px) {
+  :root {
+    --yf-mobile-topbar-h: 54px;
+    --yf-mobile-nav-h: 62px;
+    --yf-chat-input-h: 68px;
+  }
+
+  .app.messages-mode .main-content {
+    padding: 0 !important;
+  }
+
+  #page-messages {
+    padding: 0 !important;
+    min-height: calc(100dvh - var(--yf-mobile-topbar-h) - var(--yf-mobile-nav-h));
+  }
+
+  #page-messages .messages-layout {
+    height: calc(100dvh - var(--yf-mobile-topbar-h) - var(--yf-mobile-nav-h)) !important;
+    min-height: calc(100dvh - var(--yf-mobile-topbar-h) - var(--yf-mobile-nav-h));
+  }
+
+  #page-messages .messages-layout.mobile-chat .chat-panel {
+    position: relative;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+  }
+
+  #page-messages .messages-layout.mobile-chat .chat-messages {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: calc(var(--yf-chat-input-h) + 8px);
+  }
+
+  #page-messages .messages-layout.mobile-chat .chat-input-area {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--yf-mobile-nav-h) + env(safe-area-inset-bottom));
+    z-index: 1201;
+    min-height: var(--yf-chat-input-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 10px 12px;
+  }
+}
