@@ -270,6 +270,7 @@ app.get('/api/users/find/:identifier', auth, async (req, res) => {
 });
 
 app.get('/api/users/:username', auth, async (req, res) => {
+  const username = (req.params.username || '').trim();
   const result = await pool.query(
     `SELECT u.id, u.friend_id, u.username, u.full_name, u.bio, u.avatar_url, u.yoga_style, u.created_at,
       COUNT(DISTINCT f1.follower_id) as followers_count,
@@ -285,9 +286,9 @@ app.get('/api/users/:username', auth, async (req, res) => {
      LEFT JOIN follows f1 ON f1.following_id = u.id
      LEFT JOIN follows f2 ON f2.follower_id = u.id
      LEFT JOIN posts p ON p.user_id = u.id
-     WHERE u.username = $1
+     WHERE LOWER(u.username) = LOWER($1)
      GROUP BY u.id`,
-    [req.params.username, req.user.id]
+    [username, req.user.id]
   );
   if (!result.rows[0]) return res.status(404).json({ error: 'User not found' });
   res.json(result.rows[0]);
@@ -396,14 +397,15 @@ app.get('/api/posts/explore', auth, async (req, res) => {
 });
 
 app.get('/api/posts/user/:username', auth, async (req, res) => {
+  const username = (req.params.username || '').trim();
   const result = await pool.query(
     `SELECT p.*, u.username, u.full_name, u.avatar_url, u.friend_id,
       EXISTS(SELECT 1 FROM likes WHERE user_id = $1 AND post_id = p.id) as is_liked
      FROM posts p
      JOIN users u ON u.id = p.user_id
-     WHERE u.username = $2
+     WHERE LOWER(u.username) = LOWER($2)
      ORDER BY p.created_at DESC`,
-    [req.user.id, req.params.username]
+    [req.user.id, username]
   );
   res.json(result.rows);
 });

@@ -571,7 +571,7 @@ async function loadProfile(username) {
   if (!userRes?.ok) { container.innerHTML = '<p>User not found</p>'; return; }
 
   const user = await userRes.json();
-  const posts = await postsRes.json();
+  const posts = postsRes?.ok ? await postsRes.json() : [];
   if (requestId !== profileLoadRequestId || activeProfileUsername !== targetUsername) return;
 
   const avatar = user.avatar_url || avatarFallback(user.username);
