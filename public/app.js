@@ -1011,7 +1011,7 @@ async function loadSuggestions() {
   const users = posts.filter(p => { if (seen.has(p.user_id)) return false; seen.add(p.user_id); return true; }).slice(0, 6);
   document.getElementById('suggestions-list').innerHTML = users.map(u => `
     <div class="suggestion-item">
-      <img src="${u.avatar_url || avatarFallback(u.username)}" class="avatar-sm" onclick="viewProfile('${u.username}')" style="cursor:pointer" />
+      <img src="${u.avatar_url || avatarFallback(u.username)}" class="avatar-sm" onclick="viewProfile('${u.username}')" style="cursor:pointer" onerror="this.src='${avatarFallback(u.username)}'" />
       <div class="info">
         <p onclick="viewProfile('${u.username}')" style="cursor:pointer">${u.username}${renderVerifiedBadge(u)}</p>
         <small>${u.yoga_style || 'Yoga'}</small>
