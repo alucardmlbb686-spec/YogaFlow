@@ -11,6 +11,8 @@ let currentPage = 'feed';
 let feedPage = 1;
 let loadingFeed = false;
 let currentChatUserId = null;
+let activeProfileUsername = currentUser?.username || null;
+let profileLoadRequestId = 0;
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 768px)').matches;
@@ -125,6 +127,7 @@ async function register() {
 function saveAuth(t, u) {
   token = t;
   currentUser = u;
+  activeProfileUsername = u?.username || null;
   localStorage.setItem('yf_token', t);
   localStorage.setItem('yf_user', JSON.stringify(u));
 }
@@ -133,6 +136,7 @@ function logout() {
   localStorage.removeItem('yf_token');
   localStorage.removeItem('yf_user');
   token = null; currentUser = null;
+  activeProfileUsername = null;
   if (ws) ws.close();
   setAuthUIState(false);
   showLogin();
@@ -224,7 +228,11 @@ function navigate(page) {
       loadConversations();
       break;
     case 'notifications': loadNotifications(); break;
-    case 'profile': loadProfile(currentUser?.username); break;
+    case 'profile': {
+      const targetProfile = activeProfileUsername || currentUser?.username;
+      loadProfile(targetProfile);
+      break;
+    }
   }
 }
 
@@ -522,16 +530,27 @@ async function deletePost(postId) {
 
 // ─── PROFILE ──────────────────────────────────────────────────
 async function loadProfile(username) {
-  if (!username) return;
+  const targetUsername = username || activeProfileUsername || currentUser?.username;
+  if (!targetUsername) return;
+  activeProfileUsername = targetUsername;
+  const requestId = ++profileLoadRequestId;
+
   const container = document.getElementById('profile-content');
+  if (!container) return;
   container.innerHTML = '<div class="loading-indicator" style="padding:60px"><div class="spinner"></div></div>';
+
   const [userRes, postsRes] = await Promise.all([
-    api(`/users/${username}`),
-    api(`/posts/user/${username}`)
+    api(`/users/${targetUsername}`),
+    api(`/posts/user/${targetUsername}`)
   ]);
+
+  if (requestId !== profileLoadRequestId || activeProfileUsername !== targetUsername) return;
   if (!userRes?.ok) { container.innerHTML = '<p>User not found</p>'; return; }
+
   const user = await userRes.json();
   const posts = await postsRes.json();
+  if (requestId !== profileLoadRequestId || activeProfileUsername !== targetUsername) return;
+
   const avatar = user.avatar_url || avatarFallback(user.username);
   const isMe = user.id === currentUser?.id;
   container.innerHTML = `
@@ -583,9 +602,8 @@ async function loadProfile(username) {
 }
 
 function viewProfile(username) {
+  activeProfileUsername = username;
   navigate('profile');
-  document.getElementById('page-profile').classList.add('active');
-  loadProfile(username);
 }
 
 async function toggleFollow(userId, btn) {
