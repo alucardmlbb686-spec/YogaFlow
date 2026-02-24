@@ -13,6 +13,7 @@ let loadingFeed = false;
 let currentChatUserId = null;
 let activeProfileUsername = currentUser?.username || null;
 let profileLoadRequestId = 0;
+const VERIFIED_FRIEND_ID = 'YF000001';
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 768px)').matches;
@@ -60,6 +61,15 @@ function formatFriendId(user) {
   if (user?.friend_id) return user.friend_id;
   if (user?.id) return `YF${String(user.id).padStart(6, '0')}`;
   return '—';
+}
+
+function isVerifiedUser(user) {
+  return formatFriendId(user) === VERIFIED_FRIEND_ID;
+}
+
+function renderVerifiedBadge(user) {
+  if (!isVerifiedUser(user)) return '';
+  return '<span class="verified-badge" title="Verified">✔</span>';
 }
 
 function normalizeLookupInput(value) {
@@ -174,7 +184,7 @@ function initApp() {
 function updateSidebarUser() {
   if (!currentUser) return;
   document.getElementById('sidebar-avatar').src = currentUser.avatar_url || avatarFallback(currentUser.username);
-  document.getElementById('sidebar-username').textContent = currentUser.username || '';
+  document.getElementById('sidebar-username').innerHTML = `${escapeHtml(currentUser.username || '')}${renderVerifiedBadge(currentUser)}`;
   document.getElementById('sidebar-style').textContent = currentUser.yoga_style || '';
   const sidebarFriendId = document.getElementById('sidebar-friend-id');
   if (sidebarFriendId) sidebarFriendId.textContent = `ID: ${formatFriendId(currentUser)}`;
@@ -563,7 +573,7 @@ async function loadProfile(username) {
         </div>` : `<img src="${avatar}" class="avatar-xl" onerror="this.src='${avatarFallback(user.username)}'" />`}
         <div class="profile-info">
           <h2>${user.full_name || user.username}</h2>
-          <p class="username">@${user.username}</p>
+          <p class="username">@${user.username}${renderVerifiedBadge(user)}</p>
           <p class="text-muted small">Friend ID: ${formatFriendId(user)}</p>
           ${user.yoga_style ? `<div class="yoga-tag">🧘 ${user.yoga_style}</div>` : ''}
           ${user.bio ? `<p class="bio" style="margin-top:8px">${escapeHtml(user.bio)}</p>` : ''}
@@ -603,6 +613,12 @@ async function loadProfile(username) {
 
 function viewProfile(username) {
   activeProfileUsername = username;
+  navigate('profile');
+}
+
+function openMyProfile() {
+  if (!currentUser?.username) return;
+  activeProfileUsername = currentUser.username;
   navigate('profile');
 }
 
@@ -702,7 +718,7 @@ async function loadConversations() {
     <div class="convo-item ${c.partner_id === currentChatUserId ? 'active' : ''}" onclick="openChat(${c.partner_id}, '${c.username}', '${c.avatar_url || avatarFallback(c.username)}')">
       <img src="${c.avatar_url || avatarFallback(c.username)}" class="avatar-sm" onerror="this.src='${avatarFallback(c.username)}'" />
       <div class="info">
-        <div class="name">${c.full_name || c.username}</div>
+        <div class="name">${c.full_name || c.username}${renderVerifiedBadge({ id: c.partner_id, friend_id: c.friend_id })}</div>
         <div class="preview">${escapeHtml(c.last_message || 'You are friends now. Say hello! 👋')}</div>
       </div>
       <div class="meta">
@@ -731,7 +747,7 @@ async function openChat(userId, username, avatar) {
       </button>
       <img src="${avatar}" class="avatar-sm" onclick="viewProfile('${username}')" style="cursor:pointer" onerror="this.src='${avatarFallback(username)}'" />
       <div>
-        <div class="name" onclick="viewProfile('${username}')" style="cursor:pointer">${username}</div>
+        <div class="name" onclick="viewProfile('${username}')" style="cursor:pointer">${username}${renderVerifiedBadge({ id: userId })}</div>
         <div class="status">Active</div>
       </div>
     </div>
@@ -962,7 +978,7 @@ async function searchUsers(query) {
     dropdown.innerHTML = users.map(u => `
       <div class="search-dropdown-item" onclick="viewProfile('${u.username}');document.getElementById('search-results').classList.remove('visible')">
         <img src="${u.avatar_url || avatarFallback(u.username)}" class="avatar-sm" onerror="this.src='${avatarFallback(u.username)}'" />
-        <div class="info"><p>${u.username}</p><small>${formatFriendId(u)} · ${u.yoga_style || 'Yoga'}</small></div>
+        <div class="info"><p>${u.username}${renderVerifiedBadge(u)}</p><small>${formatFriendId(u)} · ${u.yoga_style || 'Yoga'}</small></div>
       </div>
     `).join('');
     dropdown.classList.toggle('visible', users.length > 0);
@@ -984,7 +1000,7 @@ async function loadSuggestions() {
     <div class="suggestion-item">
       <img src="${u.avatar_url || avatarFallback(u.username)}" class="avatar-sm" onclick="viewProfile('${u.username}')" style="cursor:pointer" />
       <div class="info">
-        <p onclick="viewProfile('${u.username}')" style="cursor:pointer">${u.username}</p>
+        <p onclick="viewProfile('${u.username}')" style="cursor:pointer">${u.username}${renderVerifiedBadge(u)}</p>
         <small>${u.yoga_style || 'Yoga'}</small>
       </div>
       <button class="btn-follow" onclick="quickFollow(${u.user_id}, '${u.username}', this)">Follow</button>
@@ -1050,7 +1066,7 @@ async function searchFriends(query) {
       <div class="friend-card">
         <img src="${avatar}" class="avatar-md" onerror="this.src='${avatarFallback(u.username)}'" />
         <div class="friend-meta">
-          <p class="friend-name" onclick="viewProfile('${u.username}')">${u.full_name || u.username}</p>
+          <p class="friend-name" onclick="viewProfile('${u.username}')">${u.full_name || u.username}${renderVerifiedBadge(u)}</p>
           <p class="friend-username">@${u.username}</p>
           <p class="friend-id">ID: ${formatFriendId(u)}</p>
         </div>
